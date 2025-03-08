@@ -1,0 +1,21 @@
+{
+    "name": "@canyoncasa/node-red-passthru-history",
+    "version": "0.1.14",
+    "description": "Payload/msg history queue with passthru",
+    "node-red": {
+        "nodes": {
+            "passthru-history": "passthru.js"
+        }
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [
+        "node-red",
+        "history",
+        "queue",
+        "passthru"
+    ],
+    "author": "CanyonCasa",
+    "license": "ISC"
+}

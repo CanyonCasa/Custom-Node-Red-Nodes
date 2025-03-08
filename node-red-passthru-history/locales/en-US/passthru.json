@@ -1,0 +1,20 @@
+{
+    "passthru": {
+        "errors": {
+            "number": "Numeric value required"
+        },
+        "label": {
+            "node": "Passthru History",
+            "limit": "Limit",
+            "store": {
+                "label": "Store",
+                "msg": "Store whole message",
+                "payload": "Store message payload"
+            }
+        },
+        "tips": {
+            "limit": "Tip: Maximum number of records to store.",
+            "store": "Tip: Store message payload or whole message."
+        }
+    }
+}

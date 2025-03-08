@@ -1,0 +1,22 @@
+
+<script type="text/html" data-help-name="passthru-history">
+    <p>Keeps a running history of payloads or messages that also passthru. Each message input passes to output, 
+        unless the message has a history property, which will output the retained history as the payload instead. 
+        If the history property has a value of 'clear' the history will also be cleared.
+    </p>
+    <h3>Inputs</h3>
+    <ul>
+        <li><code>Name</code> defines the display name for the node.</li>
+        <li><code>Limit</code> defines the maximum number of stored values.</li>
+        <li><code>Store</code> defines whether node stores the msg.payload or whole msg.</li>
+    </ul>
+    <h3>Outputs</h3>
+        <p>No properties.</p>
+    <h3>Messages</h3>
+    <ul>
+        <li><code>msg.history</code> when defined, outputs the history instead of passing the message; 
+            when defined as 'clear', it clears the existing history. Messages with a history property 
+            never get stored in the history.</li>
+    </ul>
+        
+</script>

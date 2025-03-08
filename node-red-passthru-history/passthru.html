@@ -1,0 +1,57 @@
+<!-- passthru (node-red palette) node... --> 
+<script type="text/html" data-template-name="passthru-history">
+    <div class="form-row"><p>Node properties...</p></div>
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="node-red:common.label.name"></span></label>
+        <input type="text" id="node-input-name" data-i18n="[placeholder]node-red:common.label.name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-limit"><i class="fa fa-tag"></i><span data-i18n="passthru.label.limit"></span></label>
+        <input type="text" id="node-input-limit">
+        <div class="form-tips" id="tip-limit"><span data-i18n="passthru.tips.limit"></span></div>
+    </div>
+    <div class="form-row">
+        <label for="node-input-store"><i class="fa fa-tag"></i><span data-i18n="passthru.label.store.label"></span></label>
+        <select id="node-input-store">
+            <option value="payload" data-i18n="passthru.label.store.payload"></option>
+            <option value="msg" data-i18n="passthru.label.store.msg"></option>
+        </select>
+        <div class="form-tips" id="tip-store"><span data-i18n="passthru.tips.store"></span></div>
+    </div>
+</script>
+
+<!-- passthru node -->
+<script type="text/javascript">
+(function() {
+    RED.nodes.registerType('passthru-history',{
+        category: 'function',
+        defaults: {
+            limit: {value: ""},
+            name: {value: ""},
+            store: {value:""},
+            topic: {value: ""}
+        },
+        color: 'plum',
+        inputs: 1,
+        outputs: 1,
+        icon: "file.svg",
+        align: "left",
+        label: function() {
+            return this.name || this._("passthru.label.node");
+        },
+        labelStyle: function() {
+            return this.name?"node_label_italic":"";
+        },
+        oneditprepare: function() {
+            var node = this;
+            // set default form values...
+            $("#node-input-name").val(node.name || '');
+            $("#node-input-limit").val(node.limit || '100');
+            $("#node-input-store").val(node.store || 'payload');
+        },
+        oneditsave: function() {
+            var node = this;
+        }
+    });
+})();
+</script>
