@@ -1,0 +1,40 @@
+
+<script type="text/html" data-help-name="persist-data">
+    <p>Persists data across deployment and node-red restarts. Data can be full global context, 
+        a specific global context key, or the last payload received. By default data is assumed 
+        to be JSON formatted unless 'raw' flag is enabled in which case no stringification and 
+        parsing (of a payload) occurs; however all context data always treated as JSON format. 
+        The node only outputs restored data, not incoming messages, but an incoming 
+        message can trigger an immediate data capture and save anytime be including the msg.save
+        property.
+    </p>
+    <h3>Inputs</h3>
+    <ul>
+        <li><code>Name</code> defines the display name for the node.</li>
+        <li><code>File</code> defines the filespec for the save/recall operations.</li>
+        <li><code>Delay</code> defines the a delay in seconds before recalling data. Default 0.1</li>
+        <li><code>Capture</code> defines what data source is used with choises being:</li>
+            <ul>
+                <li><code>Global Context:</code> the full global context.</li>
+                <li><code>Global Key:</code> a specific global key.</li>
+                <li><code>Last Payload</code> Last msg.payload</li>
+            </ul>
+        <li><code>Key</code> defines the captured global context key when Global Key is selected 
+            as the capture mode</li>
+        <li><code>Raw</code> flag to treat data as raw content, otherwise assumed JSON format.</li>
+    </ul>
+    <h3>Outputs</h3>
+    <p>No specific properties, although input settings may influence output messages and format.</p>
+    <p>When restored, if capture mode is defined as Last msg.payload, restored data gets sent out as a 
+        new msg.payload, otherwise, the respective global context global variable gets set and then the 
+        data passed as a new msg.payload. If no restored data is found the node outputs a null payload.</p>
+    <p>No input messages ever pass to output.</p>
+    <h3>Messages</h3>
+    <ul>
+        <li><code>msg.save</code> when defined, forces the immediate saving of data. </li>
+        <li><code>msg.payload</code> when capture mode is defined as Last msg.payload, incoming msg.payload 
+            gets saved to memory until the node closes. Note: only the most recent payload is saved 
+            overwriting any previous payload.</li>
+    </ul>
+        
+</script>

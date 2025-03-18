@@ -1,0 +1,24 @@
+{
+    "persist": {
+        "errors": {
+            "number": "Numeric value required"
+        },
+        "label": {
+            "delay": "Specifies a data recall delay.",
+            "file": "Filename for stored data",
+            "key": "Global Context Key name",
+            "node": "Persist Data",
+            "raw": "Treat data as raw content (default JSON format)",
+            "capture": {
+                "global": "Save full Global Context",
+                "gkey": "Save Global Context Key",
+                "last": "Save Last msg.payload"
+            }
+        },
+        "tips": {
+            "capture": "Tip: Sets what data source gets saved and restored.",
+            "delay": "Tip: Delay in fractional seconds before data recall to allow system to stablize",
+            "file": "May be an absolute path or relative to node-red folder, assuming the node-red user has R/W permissions."
+        }
+    }
+}

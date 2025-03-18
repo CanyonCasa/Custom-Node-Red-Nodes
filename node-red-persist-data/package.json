@@ -1,0 +1,21 @@
+{
+    "name": "@canyoncasa/node-red-persist-data",
+    "version": "0.1.1",
+    "description": "Payload/global data persist across deploy and restarts",
+    "node-red": {
+        "nodes": {
+            "persist-data": "persist.js"
+        }
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [
+        "node-red",
+        "data",
+        "global",
+        "persist"
+    ],
+    "author": "CanyonCasa",
+    "license": "ISC"
+}
