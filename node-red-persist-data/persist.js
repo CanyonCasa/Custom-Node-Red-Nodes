@@ -12,82 +12,84 @@ module.exports = function(RED) {
     function PersistDataNode(ncfg) {
         RED.nodes.createNode(this,ncfg);
         this.name = ncfg.name;
-        this.delay = ncfg.delay!=='' ? ncfg.delay : '0.1';
+        this.delay = ncfg.delay || '0.1';
         this.file = ncfg.file;
         this.capture = ncfg.capture;
-        this.key = ncfg.key;
+        this.keys = ncfg.keys;
         this.raw = ncfg.raw;
         this.lastPayload;
         var node = this;
 
         function filespec(filename) {
-            return filename ? (path.isAbsolute(filename) ? file : (RED.settings.fileWorkingDirectory ? 
-                path.resolve(path.join(RED.settings.fileWorkingDirectory,filename)) : null)) : null;
+            return filename ? path.isAbsolute(filename) ? filename : 
+                path.resolve(path.join(RED.settings.fileWorkingDirectory||'./',filename)) : null;
         }
 
         async function recallData(node) {
-            console.log('recall:', node);
             let spec = filespec(node.file);
-            if (!spec) return console.error( `File ${node.file} NOT defined!`);
             try {
-                let data = await fsp.readFile(spec);
-                data = node.capture!=='payload' || !node.raw ? JSON.parse(data) : data;
-                if (!node.capture==='payload') {
-                    if (node.key) {
-                        node.context.global[key] = data;
-                    } else {
-                        node.context.global = data;
-                    };
+                let data = (node.capture==='last' && node.raw) ? await fsp.readFile(spec) : JSON.parse(await fsp.readFile(spec,'utf8'));
+                let tmp = {};
+                if (node.capture==='last') {
+                    node.lastPayload = data;
+                    tmp = data;
+                } else {
+                    let cntxt = node.capture==='global' ? node.context().global : node.context().flow;
+                    let keys = node.keys ? node.keys.split(',') : Object.keys(data);
+                    keys.forEach(k=>{ cntxt.set(k,data[k]); tmp[k]=data[k]; })
                 };
-                node.send({topic: 'data', payload: data});
-        } catch(e) {
-            node.send({topic: 'error', payload: null, error: e});
-        };
+                node.send({topic: 'data', payload: tmp});
+            } catch(e) {
+                node.error(e);
+                node.send({topic: 'recall error', payload: null, error: e})
+            };
+        }
 
-        async function saveData(node,data) {
-            console.log('save:', node.file,data);
-            console.log('recall:', node);
+        async function saveData(node) {
+            let data = {};
+            if (node.capture==='last') {
+                data = node.raw ? node.lastPayload : JSON.stringify(node.lastPayload);
+            } else {
+                let cntxt = node.capture==='global' ? node.context().global : node.context().flow;
+                let keys = node.keys ? node.keys.split(',') : cntxt.keys();
+                keys.forEach(k=>{ data[k]=cntxt.get(k); })
+                data = JSON.stringify(data);
+            }
             let spec = filespec(node.file);
-            if (!spec) return console.error( `File ${node.file} NOT defined!`);
             try {
                 return await fsp.writeFile(spec,data);
             } catch(e) {
                 node.error(e);
-                return e;
+                node.send({topic: 'save error', payload: null, error: e})
             }; 
         };
 
         // on messages...
         node.on("input", async function(msg, send, done) {
-            if (msg.hasOwnProperty("payload")) this.lastPayload = msg.payload;
-            if (!msg.hasOwnProperty("save")) return;
-            await saveData();
-            node.status({ fill: 'green', shape:"dot", text: "Saved" });
-            if (done) done();
+            if (msg.hasOwnProperty("save")) {
+                if (msg.save) this.lastPayload = msg.payload;
+                await saveData(node);
+                node.status({ fill: 'green', shape:"dot", text: "Saved" });
+                done();
+            } else {
+                if (msg.hasOwnProperty("payload")) this.lastPayload = msg.payload;
+                node.status({ fill: 'green', shape:"ring", text: `${typeof this.lastPayload}` });
+                done();
+            };
         });
 
         // on stop...
         node.on("close", async function(done) {
-            let data;
-            switch (node.capture) {
-                case 'payload': data = node.raw ? node.lastPayload : JSON.stringify(node.lastPayload);
-                    break;
-                case 'key': data = JSON.stringify(node.context.global.get(node.key));
-                    break;
-                case 'global':
-                    data = JSON.stringify(node.context.global.keys().reduce((x,k)=>{x[k]=node.context.global.get(k); return x;},{}));
-                    break;
-            }
-            await saveData(node, data);
-            if (done) done();
+            await saveData(node);
+            done();
         });
 
         // on start (if file defined)...
-        let delay = this.delay!=='' ? Math.floor(Number(this.delay)*1000) : 0.1;
-        if (node.file) setTimeout(()=>recallData(node),delay);
-
-        node.status({ fill: 'green', shape: "dot", text: "" });    // initial state
-
+        let delay = Math.floor(Number(this.delay)*1000);
+        if (node.file) setTimeout(async ()=>{
+            await recallData(node)
+            node.status({ fill: 'green', shape: "dot", text: "Recalled" });    // initial state
+        },delay);
     };
 
     RED.nodes.registerType("persist-data",PersistDataNode);

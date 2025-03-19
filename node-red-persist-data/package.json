@@ -1,6 +1,6 @@
 {
     "name": "@canyoncasa/node-red-persist-data",
-    "version": "0.1.1",
+    "version": "0.2.3",
     "description": "Payload/global data persist across deploy and restarts",
     "node-red": {
         "nodes": {
@@ -17,5 +17,6 @@
         "persist"
     ],
     "author": "CanyonCasa",
-    "license": "ISC"
+    "license": "ISC",
+    "dependencies": {}
 }

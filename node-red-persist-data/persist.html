@@ -6,44 +6,47 @@
         <input type="text" id="node-input-name" data-i18n="[placeholder]node-red:common.label.name">
     </div>
     <div class="form-row">
-        <label for="node-input-file"><i class="fa fa-tag"></i><span data-i18n="persist.label.file"></span></label>
+        <label for="node-input-file"><i class="fa fa-file"></i><span data-i18n="persist.label.file"></span></label>
         <input type="text" id="node-input-file">
         <div class="form-tips" id="tip-file"><span data-i18n="persist.tips.file"></span></div>
     </div>
     <div class="form-row">
-        <label for="node-input-delay"><i class="fa fa-tag"></i><span data-i18n="persist.label.delay"></span></label>
+        <label for="node-input-delay"><i class="fa fa-wrench"></i><span data-i18n="persist.label.delay"></span></label>
         <input type="text" id="node-input-delay">
         <div class="form-tips" id="tip-delay"><span data-i18n="persist.tips.delay"></span></div>
     </div>
     <div class="form-row">
-        <label for="node-input-capture"><i class="fa fa-tag"></i><span data-i18n="persist.label.capture.label"></span></label>
+        <label for="node-input-capture"><i class="fa fa-filter"></i><span data-i18n="persist.label.capture"></span></label>
         <select id="node-input-capture">
-            <option value="global" data-i18n="persist.label.capture.global"></option>
-            <option value="gkey" data-i18n="persist.label.capture.gkey"></option>
-            <option value="last" data-i18n="persist.label.capture.last"></option>
+            <option value="global" data-i18n="persist.label.captureMode.global"></option>
+            <option value="flow" data-i18n="persist.label.captureMode.flow"></option>
+            <option value="last" data-i18n="persist.label.captureMode.last"></option>
         </select>
         <div class="form-tips" id="tip-capture"><span data-i18n="persist.tips.capture"></span></div>
     </div>
-    <div id="form-key" class="form-row" style="margin-top:40px;">
-        <label for="node-input-key"><i class="fa fa-wrench"></i> <span data-i18n="presist.label.key"></span></label>
-        <input type="text" id="node-input-key">
+    <div id="form-keys" class="form-row" style="margin-top:40px;">
+        <label for="node-input-keys"><i class="fa fa-wrench"></i> <span data-i18n="persist.label.keys"></span></label>
+        <input type="text" id="node-input-keys">
+        <div class="form-tips" id="tip-keys"><span data-i18n="persist.tips.keys"></span></div>
     </div>
     <div id="form-raw" class="form-row" style="margin-top:40px;">
-        <label for="node-input-raw"><i class="fa fa-wrench"></i> <span data-i18n="presist.label.raw"></span></label>
+        <label for="node-input-raw"><i class="fa fa-wrench"></i> <span data-i18n="persist.label.raw"></span></label>
         <input type="checkbox" id="node-input-raw" />
+        <div class="form-tips" id="tip-raw"><span data-i18n="persist.tips.raw"></span></div>
     </div>
 </script>
 
 <!-- persist node -->
 <script type="text/javascript">
 (function() {
-    RED.nodes.registerType('persist-history',{
+    RED.nodes.registerType('persist-data',{
         category: 'storage',
         defaults: {
             capture: {value:""},
+            delay: {value:""},
             file: {value: ""},
             name: {value: ""},
-            key: {value: ""},
+            keys: {value: ""},
             raw: {value: ""}
         },
         color: 'aquamarine',
@@ -59,24 +62,21 @@
         },
         oneditprepare: function() {
             var node = this;
-console.log('node:',node)
             // set default form values...
             $("#node-input-name").val(node.name || '');
             $("#node-input-file").val(node.file || '');
             $("#node-input-capture").val(node.capture || 'global');
-            $("#node-input-key").val(node.key || '');
+            $("#node-input-keys").val(node.keys || '');
             $("#node-input-raw").prop('checked',node.raw===true);
             var captureElement = $("#node-input-capture");
             captureElement.on("change",function(){
-                (captureElement.val()==='key') ? $("#form-key").show() : $("#form-key").hide();
-                (captureElement.val()==='raw') ? $("#form-raw").show() : $("#form-raw").hide();
+                (captureElement.val()!=='last') ? $("#form-keys").show() : $("#form-keys").hide();
+                (captureElement.val()==='last') ? $("#form-raw").show() : $("#form-raw").hide();
             });
         },
         oneditsave: function() {
             var node = this;
-console.log('raw:',node.raw)
             node.raw = $("#node-input-raw").prop("checked");
-console.log('node:',node)
         }
     });
 })();

@@ -4,21 +4,24 @@
             "number": "Numeric value required"
         },
         "label": {
-            "delay": "Specifies a data recall delay.",
-            "file": "Filename for stored data",
-            "key": "Global Context Key name",
+            "delay": "Delay",
+            "file": "File",
+            "keys": "Keys",
             "node": "Persist Data",
-            "raw": "Treat data as raw content (default JSON format)",
-            "capture": {
-                "global": "Save full Global Context",
-                "gkey": "Save Global Context Key",
+            "raw": "Raw Data",
+            "capture": "Capture",
+            "captureMode": {
+                "global": "Save Global Context",
+                "flow": "Save Flow Context",
                 "last": "Save Last msg.payload"
             }
         },
         "tips": {
             "capture": "Tip: Sets what data source gets saved and restored.",
-            "delay": "Tip: Delay in fractional seconds before data recall to allow system to stablize",
-            "file": "May be an absolute path or relative to node-red folder, assuming the node-red user has R/W permissions."
+            "delay": "Tip: Delay in fractional seconds before data recall output message to allow system to stablize",
+            "file": "May be an absolute path or relative to node-red folder (or RED.settings.fileWorkingDirectory if defined), assuming the node-red user has R/W permissions.",
+            "keys": "Comma delimited list of context keys to be captured/restored. Blank for all.",
+            "raw": "Treat payload data as raw content (i.e. buffer, default JSON format)"
         }
     }
 }
