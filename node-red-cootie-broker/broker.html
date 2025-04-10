@@ -1,14 +1,16 @@
 <!-- connection configuration node... --> 
 <script type="text/html" data-template-name="cootie-connection-config">
     <style>
-        div.form-row input#node-config-input-debug {width:24px; margin-left:10px; vertical-align:top;}
-        div.form-row input[name=node-config-input-agent] {width:24px; margin-left:10px; vertical-align:top;}
+        div.form-row input#node-config-input-debug { width:24px; margin-left:10px; vertical-align:top; }
+        div.form-row input[type="radio"] { width:24px; margin-left:10px; vertical-align:top; }
     </style>
+
     <div class="form-row">
         <label for="node-config-input-transport"><i class="fa fa-random"></i> <span data-i18n="broker.label.transport"></span></label>
         <select id="node-config-input-transport"></select>
     </div>
-    <div class="form-tips" id="tip-transport"><span data-i18n="broker.tips.transport"></span></div>  
+    <div class="form-tips" id="tip-transport"><span data-i18n="broker.tips.transport"></span></div> 
+
     <span id="form-cootie">
     <div class="form-row">
         <label for="node-config-input-reference"><i class="fa fa-wrench"></i> <span data-i18n="broker.label.cootie"></span></label>
@@ -17,28 +19,44 @@
     <div class="form-tips" id="tip-cootie.reference"><span data-i18n="broker.tips.cootie.reference"></span></div>  
     <div class="form-row">
         <label for="node-config-input-agent"><i class="fa fa-tag"></i> <span data-i18n="broker.label.agent"></span></label>
-        <input type="radio" name="node-config-input-agent" value="client" />Client
-        <input type="radio" name="node-config-input-agent" value="server" />Server
+        <input type="radio" name="node-config-input-agent" value="client" /><span data-i18n="broker.label.client"></span>
+        <input type="radio" name="node-config-input-agent" value="server" /><span data-i18n="broker.label.server"></span>
     </div>
     <div class="form-tips" id="tip-cootie.note"><i class="fa fa-info"></i> <span data-i18n="broker.tips.cootie.note"></span></div>  
     </span>
-    <span id="form-http">
+
+    <span id="form-ip">
     <div class="form-row">
         <label for="node-config-input-hostname"><i class="fa fa-wrench"></i> <span data-i18n="broker.label.hostname"></span></label>
         <input type="text" id="node-config-input-hostname"  data-i18n="[placeholder]broker.placeholder.hostname" />
     </div>
-    <div class="form-tips" id="tip-http-hostname"></i><span data-i18n="broker.tips.http.hostname"></span></div>  
+    <div class="form-tips" id="tip-ip-hostname"></i><span data-i18n="broker.tips.ip.hostname"></span></div>  
     <div class="form-row">
         <label for="node-config-input-host"><i class="fa fa-wrench"></i> <span data-i18n="broker.label.host"></span></label>
         <input type="text" id="node-config-input-host"  data-i18n="[placeholder]broker.placeholder.host" />
     </div>
-    <div class="form-tips" id="tip-http-host"></i><span data-i18n="broker.tips.http.host"></span></div>  
+    <div class="form-tips" id="tip-ip-host"></i><span data-i18n="broker.tips.ip.host"></span></div>
     <div class="form-row">
         <label for="node-config-input-port"><i class="fa fa-wrench"></i> <span data-i18n="broker.label.port"></span></label>
         <input type="text" id="node-config-input-port"  data-i18n="[placeholder]broker.placeholder.port" />
     </div>
-    <div class="form-tips" id="tip-http-port"></i><span data-i18n="broker.tips.http.port"></span></div>  
+    <div class="form-tips" id="tip-ip-port"></i><span data-i18n="broker.tips.ip.port"></span></div>  
+    <span id="form-http">
+    <div class="form-row">
+        <label for="node-config-input-url"><i class="fa fa-wrench"></i> <span data-i18n="broker.label.url"></span></label>
+        <input type="text" id="node-config-input-url"  data-i18n="[placeholder]broker.placeholder.url" />
+    </div>
+    <div class="form-tips" id="tip-ip-url"></i><span data-i18n="broker.tips.ip.url"></span></div>  
+    <div class="form-row">
+        <label for="node-config-input-method"><i class="fa fa-tag"></i> <span data-i18n="broker.label.method"></span></label>
+        <input type="radio" name="node-config-input-method" value="get" /><span data-i18n="broker.label.get"></span>
+        <input type="radio" name="node-config-input-method" value="post" /><span data-i18n="broker.label.post"></span>
+    </div>
+    <div class="form-tips" id="tip-cootie.http"><i class="fa fa-info"></i> <span data-i18n="broker.tips.cootie.http"></span></div>  
+
     </span>
+    </span>
+
     <span id="form-serial">
     <div class="form-row">
         <label for="node-config-input-serialport"><i class="fa fa-random"></i> <span data-i18n="serial.label.serialport"></span></label>
@@ -80,11 +98,13 @@
         </table>
     </div>
     </span>
+
     <div class="form-row">
         <label for="node-config-input-max"><i class="fa fa-tag"></i> <span data-i18n="broker.label.max"></span></label>
         <input type="text" id="node-config-input-max" style="width:40px;" data-i18n="[placeholder]broker.placeholder.max" />
     </div>
-    <div class="form-tips" id="tip-max"><i class="fa fa-info"></i> <span data-i18n="broker.tips.max"></span></div>  
+    <div class="form-tips" id="tip-max"><i class="fa fa-info"></i> <span data-i18n="broker.tips.max"></span></div>
+
     <div class="form-row" style="margin-top:40px;">
         <label for="node-config-input-debug"><i class="fa fa-wrench"></i> <span data-i18n="broker.label.debug"></span></label>
         <input type="checkbox" id="node-config-input-debug" />Verbose debug/trace messages
@@ -98,7 +118,8 @@
             case 'cootie': 
                 var {reference,agent} = cfg || {};
                 return `Cootie:${reference}:${agent}`;
-            case 'http':
+                case 'udp':
+                case 'http':
                 var {port,host,hostname} = cfg || {};
                 return hostname || `${host}${port?":"+port:""}`;
             case 'serial':
@@ -117,10 +138,11 @@
         },
         label: function() { return makeLabel(this.transport,this.config); },
         oneditprepare: function() {
-            var seen = (see)=>['serial','http','cootie'].forEach(t=>{see===t ? $(`#form-${t}`).show() : $(`#form-${t}`).hide()})
+            var show = (tt,id) => (tt===id) || (id==='ip' && (tt==='udp'||tt==='http')) || (id==='http' && tt==='ip');
+            var seen = (tt)=>['serial','ip','http','cootie'].forEach(id=>{show(tt,id) ? $(`#form-${id}`).show() : $(`#form-${id}`).hide()})
             // setup the transport options...
             var ttSelect = $("#node-config-input-transport");
-            ['serial','http','cootie'].forEach(t=>ttSelect[0].add(new Option(this._(`transport.transports.${t}`),t)))
+            ['serial','udp','http','cootie'].forEach(t=>ttSelect[0].add(new Option(this._(`transport.transports.${t}`),t)))
             ttSelect.on("change",function(){
                 var tt = $("#node-config-input-transport").val();
                 seen(tt||'cootie');
@@ -128,15 +150,17 @@
             ttSelect.val(this.transport || 'cootie');
             seen(ttSelect.val());
             // unpack connection configuration properties...
-            var {reference, agent, hostname, host, port, serialport, baud, databits, parity, stopbits, timeout, max } = this.config || {};
+            var {reference, agent, hostname, host, port, method, url, serialport, baud, databits, parity, stopbits, timeout, max } = this.config || {};
             $("#node-config-input-max").val(max||'10');
             // unpack cootie emitter connection properties...
             $("#node-config-input-reference").val(reference||'');
             $(`input[name='node-config-input-agent'][value='${agent||"client"}']`).prop('checked',true);
-            // unpack http connection properties...
+            // unpack ip connection properties...
             $("#node-config-input-hostname").val(hostname||'');
             $("#node-config-input-host").val(host||'');
-            $("#node-config-input-port").val(port||'')
+            $("#node-config-input-port").val(port||'');
+            $("#node-config-input-url").val(url||'/');
+            $(`input[name='node-config-input-method'][value='${method||"get"}']`).prop('checked',true);
             // unpack serial connection properties...
             $("#node-config-input-serialport").val(serialport||'')
             $("#node-config-input-baud").val(baud||'115200')
@@ -168,11 +192,15 @@
                     var agent = $("input[name='node-config-input-agent']:checked").val();
                     this.config = {reference:$("#node-config-input-reference").val(), agent: agent};
                     break;
+                case 'udp':
                 case 'http':
+                    var method = $("input[name='node-config-input-method']:checked").val();
                     this.config = { 
+                        hostname: $("#node-config-input-hostname").val(), 
                         host: $("#node-config-input-host").val(), 
                         port: $("#node-config-input-port").val(),
-                        name: $("#node-config-input-hostname").val()
+                        url: $("#node-config-input-url").val(),
+                        method: method 
                     };
                     break;
                 case 'serial':
@@ -189,6 +217,7 @@
                     this.config = {};
             };
             this.config.max = $("#node-config-input-max").val() || '';
+            this.config.debug = $("#node-config-input-debug").val() || '';
             this.config.label = makeLabel(transport,this.config);
         }
     });
@@ -294,19 +323,19 @@
         category: 'network',
         defaults: {
             connection: {value:"", type:"cootie-connection-config", required:true},
+            ack: {value:""},
             agent: {value: ""},
-            name: {value:""},
-            colorRef: {value: ""},
-            mode: {value: ""},
-            tag: {value:""},
-            topic: {value:""},
             ceid: {value:""},
-            field: {value: ""},
-            out: {value:""},
-            stat: {value: ""},
+            colorRef: {value: ""},
             custom: {value:""},
             customType: {value:"json"},
-            ack: {value:""}
+            field: {value: ""},
+            mode: {value: ""},
+            name: {value:""},
+            out: {value:""},
+            tag: {value:""},
+            topic: {value:""},
+            stat: {value: ""}
         },
         color: 'sienna', // default
         inputs: 1,

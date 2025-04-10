@@ -1,16 +1,17 @@
 
-<script type="text/html" data-help-name="cootie-broker">
-    <p>Provides a connection to a remote CootiePy broker connected by a (USB) serial port, http URL, or another 
-        Cootie node. CootiePy broker uses request/response protocol for a node-red client (i.e Cootie node) to 
+<script type="text/html" data-help-name="broker">
+    <p>Provides a connection to a remote CootiePy broker connected by a (USB) serial port, HTTP/UDP (IP) socket, or 
+        another Cootie node. CootiePy broker uses request/response protocol for a node-red client (i.e Cootie node) to 
         Cootie broker (i.e. QTPy based) server. This allows a <b><i>cootie broker</i></b> node to 
         function as a remote asynchronous sensor or interface or as a command node for the CootiePy broker.</p> 
         
-        
-    <p> The <b><i>broker-connection-config</i></b> node defines the connection parameters of the serial port(s), http, 
+    <p> The <b><i>broker-connection-config</i></b> node defines the connection parameters of the serial port(s), IP, 
         and cootie client/server connections for the broker nodes. Multiple broker nodes may be assigned to a single 
         connection and mupltiple ports may defined as well to serve multiple CootiePy brokers in different locations.
         Connection configuration includes an optional debug flag to enable verbose debug messages to the runtime log
-        for tracing message handling between the broker node and the remote CootiePy broker.</p>
+        for tracing message handling between the broker node and the remote CootiePy broker. An IP connection is 
+        specified as a UDP or HTTP protocol. The HTTP protocol requires two additional method (GET or POST) and url 
+        (default /) properties.</p>
 
     <p> Per the defined (CootiePy) broker protocol, the broker node formats a <code>msg.payload</code> as newline 
         terminated JSON and writes it to the connection, normally a serial port. It establishes a node specific event 

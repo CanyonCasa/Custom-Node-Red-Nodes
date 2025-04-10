@@ -1,8 +1,7 @@
 // version...
 let {name, version} = require('./package.json');
-console.log(`Loading ${name}, version: ${version}`);
 
-// Load user defined node color palette, array of {ref:..., fill:...} values; must contain default as first entry
+// Load user defined node color palette, array of {ref:..., fill:...} values; must contain "Default" as first entry
 let palette = require('./color-palette');
 if (palette[0].ref !== 'Default') palette.unshift({ ref: "Default", fill: "sienna" });
 
@@ -10,7 +9,10 @@ module.exports = function(RED) {
     "use strict";
     var events = require("events");
     const { SerialPort } = require('serialport');
-
+    const dgram = require('node:dgram');
+    const { Buffer } = require('node:buffer');
+    const http = require('node:http');
+ 
     // Cootie-broker connection configuration Node...
     function CootieBrokerConnectionConfigNode(ncfg) {
         RED.nodes.createNode(this,ncfg);
@@ -38,8 +40,8 @@ module.exports = function(RED) {
         this.out = ncfg.out;
         this.stat = ncfg.stat;
         this.ack = ncfg.ack;
-        this.custom = ncfg.custom
-        this.customType = ncfg.customType
+        this.custom = ncfg.custom || {};    // not happy being undefined
+        this.customType = ncfg.customType;
         // node methods...
         this.parser = (template, obj)=>{
             try { return Function(...Object.keys(obj), `return \`${template}\``)(...Object.values(obj)); }
@@ -69,12 +71,11 @@ module.exports = function(RED) {
                     });
                 };
                 node.msgTopic = msg.topic;
-                //node.cntn.debug("incoming msg: "+JSON.stringify(msg));
                 node.cntn.debug('');
-                node.cntn.debug(`incoming broker msg: ${msg.topic}, ${msg._msgid}`);
+                node.cntn.debug(`incoming broker msg: ${msg.topic||msg.id}, ${msg._msgid}`);
                 try {
                     if (node.mode==='custom') { // resolve custom payload if defined...
-                        var custom = !node.custom ? '' : node.customType==='json' ? JSON.parse(node.custom||{}) : 
+                        var custom = !node.custom ? {} : node.customType==='json' ? JSON.parse(node.custom||{}) : 
                             await jsonataParse(node,node.custom||{},msg);
                         node.cntn.debug(`custom packet eval: ${JSON.stringify(custom)}`);
                     };
@@ -84,7 +85,6 @@ module.exports = function(RED) {
                         ((node.mode==='payload') && (typeof(msg.payload)==='object')) ? ['payload',msg.payload] :
                         node.mode==='simple' ? ['simple',{id: node.ceid}] : ['default',{}];
                     node.cntn.debug(`request packet[${node.mode},${src}]: ${JSON.stringify(packet)}`);
-                    //node.cntn.debug(`node[${node.handle}]: ${node.mode}`);
                     if (node.mode!=='bypass') {
                         // optionally assign scalar payload to packet.field
                         if (typeof(msg.payload!=='object') && node.field) packet[node.field] = msg.payload;
@@ -106,22 +106,21 @@ module.exports = function(RED) {
                 }
             });
 
-            // add listener for this node on its connection to capture return messages...
+            // CRITICAL: add listener for this specific node on its connection to capture return messages...
             // !!! for some reason listener needs to be refreshed or it doesn't work after redeploy
-            //   remove listeners, then add a new one for each redeploy, otherwise leaves dead listeners
-            //   putting inside 'if' statement to only add once, doesn't work after redeploy either???
-            //if (events.getEventListeners(node.cntn.tasker,node.handle).length===0) {
-                node.cntn.tasker.removeAllListeners(node.handle);
-                node.cntn.on(node.handle, function(obj) {
-                    node.cntn.debug(`heard[${node.handle},${node.mode}]: ${JSON.stringify(obj)}`);
-                    let msg = node.mode==='bypass' ? obj : 
-                        {topic: node.topic||node.msgTopic, payload: node.out?node.parser(node.out,obj):obj};
-                    node.send(msg);
-                    node.cntn.debug(`sent: ${JSON.stringify(msg)}`);
-                    node.report(node.stat?node.parser(node.stat,obj):[node.report().text,'Ok'].join(' -> '));
-                });
-                node.cntn.debug(`listening on tag: ${node.handle}`)
-            //};
+            // remove listeners, then add a new one for each redeploy, otherwise leaves dead listeners
+            // putting inside 'if' statement to only add once, doesn't work after redeploy either???
+            node.cntn.tasker.removeAllListeners(node.handle);
+            node.cntn.on(node.handle, function(obj) {
+                node.cntn.debug(`heard[${node.handle},${node.mode}]: ${JSON.stringify(obj)}`);
+                let msg = node.mode==='bypass' ? obj : 
+                    {topic: node.topic||node.msgTopic, payload: node.out?node.parser(node.out,obj):obj};
+                node.send(msg);
+                node.cntn.debug(`sent: ${JSON.stringify(msg)}`);
+                node.report(node.stat?node.parser(node.stat,obj): `${node.cntn.transport.toUpperCase()} -> Ok`);
+            });
+            node.cntn.debug(`listening on tag: ${node.handle}`)
+
             // status events capture...
             if (events.getEventListeners(node.cntn.tasker,'cntn-ready').length===0) {
                 node.cntn.on('cntn-ready', function() {
@@ -176,33 +175,11 @@ module.exports = function(RED) {
                         timex: null,
                         transport: ccfg.transport
                     };
-                    // setup shared connection event channel and listeners between cootie client/server pair...
-                    if (cntn.transport==='cootie') {
-                        sharedTaskers[cntn.config.reference] = sharedTaskers[cntn.config.reference] || new events.EventEmitter();
-                        cntn.tasker = sharedTaskers[cntn.config.reference];
-                        var tt = cntn.config.agent==='server'?'cntn-request':'cntn-response';
-                        cntn.debug(`cootie listen[${cntn.id}]: ${cntn.config.agent}-->${tt}`);
-                        cntn.tasker.on(tt,(px)=>cntn.parseAndRoute(px));
-                        cntn.debug(`cntn-request listeners: ${events.getEventListeners(cntn.tasker,'cntn-request')}`);
-                        cntn.debug(`cntn-response listeners: ${events.getEventListeners(cntn.tasker,'cntn-response')}`);
-                        if (cntn.max>cntn.tasker.getMaxListeners()) cntn.tasker.setMaxListeners(cntn.max);
-                    } else {
-                        cntn.tasker.setMaxListeners(cntn.max);
-                    };
-                    // parses JSON messages from all transports to recover routing info...
-                    cntn.parseAndRoute = function(response) {
+
+                    // routes response messages based on recovered (parsed) routing info...
+                    cntn.routeResponse = function(robj) {
                         var replied = false;
-                        var reply = (e,o) => { if (e) { replied=true; cntn.tasker.emit(e,o); } };
-                        cntn.debug(`cntn listen[${cntn.id}]: (${response.length}) ${response.trim()}`);
-                        var robj = {};  // response object
-                        try {
-                            robj = JSON.parse(response);
-                        } catch(e) {
-                            RED.log.error(RED._("broker.errors.parse")+": "+e.toString());
-                            cntn.debug(`cntn listen error: ${RED._("broker.errors.parse")}`);
-                            robj = {err: true, msg: e.toString(), detail: response};
-                        }
-                        // cntn.debug(`cntn listen routes: ${JSON.stringify(cntn.alias())}`);
+                        var reply = (endpoint,obj) => { if (endpoint) { replied=true; cntn.tasker.emit(endpoint,obj); } };
                         cntn.debug(`cntn parse route: tag/alias:${robj.tag}/${robj.tag?cntn.alias(robj.tag):undefined}, ` +
                             `id/alias:${robj.id}/${robj.id?cntn.alias(robj.id):undefined}, ` +
                             `transport: ${cntn.transport}${cntn.config.agent ? ', cootie agent: '+cntn.config.agent:''}`); 
@@ -229,15 +206,58 @@ module.exports = function(RED) {
                         // untagged + system messages catch-all '*' event...
                         if (!replied || ['cmd','err','ack'].some(f=>robj[f])) cntn.tasker.emit('*', robj);
                     };
+
+                    // parses JSON response messages from all transports to recover routing info...
+                    cntn.parseResponse = function(response) {
+                        var replied = false;
+                        var reply = (e,o) => { if (e) { replied=true; cntn.tasker.emit(e,o); } };
+                        cntn.debug(`cntn listen[${cntn.id}]: (${response.length}) ${response.trim()}`);
+                        var robj = {};  // response object
+                        try {
+                            robj = JSON.parse(response.trim()); // strip newline
+                        } catch(e) {
+                            RED.log.error(RED._("broker.errors.parse")+": "+e.toString());
+                            cntn.debug(`cntn listen error: ${RED._("broker.errors.parse")}`);
+                            robj = {err: true, msg: e.toString(), detail: response};
+                        }
+                        cntn.routeResponse(robj);
+                    };
+
+                    // Sends Cootie message to communications endpoint...
                     cntn.talk = function(packet,callback) {
                         // format packet as JSON with newline termination and send it on its way to broker...
                         var px = JSON.stringify(packet)+'\n';
-                        cntn.debug(`cntn talk[${cntn.id}@${cntn.transport}]: (${px.length}) ${px.trim()}`);
+                        cntn.debug(`cntn talk[${cntn.transport}@${cntn.id}]: (${px.length}) ${px.trim()}`);
                         if (cntn.transport==='serial') {
                             cntn.serial.write(px,(err,res)=>{
                                 if (err) RED.log.error(err)
                                 callback(err ? {fill:'red',text:RED._('broker.errors.log')} : {fill:'green',text:`sent: ${px.length}`});
                             });
+                        } else if (cntn.transport==='udp') {
+                            cntn.client = dgram.createSocket('udp4');   // client short lived
+                            cntn.client.send(px,cntn.config.port,cntn.config.host)
+                            //cntn.client.close();
+                        } else if (cntn.transport==='http') {
+                            let port = cntn.config.port ? ':'+cntn.config.port : '';
+                            let emsg = err => {RED.log.error(RED._("broker.ip.errors.error",{proto: 'http', host: cntn.config.host, port: port, error: err}),{})};
+                            let baseURL = `http://${cntn.config.host}${port}${cntn.config.url}`;
+                            let handler = (res) => {
+                                let data = '';
+                                res.on('error', err => emsg(err)) 
+                                res.on('data',(chunk => { data += chunk; }));
+                                res.on('end',() => {cntn.parseResponse(data)});
+                            };
+                            if (cntn.config.method==='get') {
+                                let query = '?q='+Buffer.from(px).toString('base64url'); // pass json as encoded parameter q
+                                http.get(baseURL+query, handler);
+                            };
+                            if (cntn.config.method==='post') {
+                                let options = {method: 'POST', headers: {'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(px) }};
+                                const req = http.request(baseURL, options, handler);
+                                req.on('error', err => emsg(err)) 
+                                req.write(px);
+                                req.end();
+                            };
                         } else if (cntn.transport==='cootie') {
                             var task = cntn.config.agent==='server'?'cntn-response':'cntn-request'
                             cntn.debug(`cntn talk emit[${cntn.id}]: ${cntn.config.agent}-->${task}`);
@@ -248,7 +268,8 @@ module.exports = function(RED) {
                             callback({fill:'red',text:RED._('broker.errors.log')});
                         }
                     };
-                    // 
+
+                    // Serial port connection...
                     if (cntn.transport==='serial') {
                         var olderr = '';
                         var { serialport, baud, databits, label, parity, stopbits, timeout } = cntn.config;
@@ -297,18 +318,58 @@ module.exports = function(RED) {
                                 do {
                                     var line = "";      // current broker response
                                     var index = buf.indexOf('\n');  // look for newline termination
-                                    if (index!=-1) {    // extract complete line from buffer
+                                    if (index!==-1) {   // extract complete line from buffer
                                         line = buf.substring(0,index);
-                                        buf = buf.substring(index+1);   
+                                        buf = buf.substring(index+1);
                                     };
                                     if (line) {         // ignore empty lines
                                         cntn.debug(`serial-in line[${line.length}]: ${line}`);
-                                        cntn.parseAndRoute(line);
+                                        cntn.parseResponse(line);
                                     };
                                 } while (buf.length>0 && index!=-1);    // process all lines
                             });
                         }
                         setupSerial();
+                    };
+
+                    // HTTP connection...
+                    // handled within callback in cntn.talk
+
+                    // UDP connection...
+                    if (cntn.transport==='udp') {
+                        var { hostname, host, port } = cntn.config;
+                        var setupUDP = function() {
+                            cntn.server = dgram.createSocket('udp4');
+                            if (!cntn.server) return;
+                            cntn.server.on('error', function(err) {
+                                let params = {hostname: hostname, udp:`${host}:${port}`, error:err.toString()};
+                                RED.log.error(`ERROR[${cntn.id}]: ` + RED._("udp.errors.error",params), {});
+                                // may need to close and reopen ???
+                            });
+                            cntn.server.on('message', function(msg, rinfo) {
+                                if (this.debug) RED.log.info(RED._("udp.onmsg",{addr:rinfo.address, msg: msg}),{});
+                                cntn.parseResponse(msg.toString('utf8'));
+                            });
+                            cntn.server.on('listening', () => {
+                                RED.log.info(RED._("udp.listening",{addr:cntn.config.host, port: cntn.config.port}),{});
+                            });                        
+                            cntn.server.bind(cntn.config.port); // Prints: server listening 0.0.0.0:41234
+                       }
+                        setupUDP();
+                    };
+
+                    // setup shared connection event channel and listeners between cootie client/server pair...
+                    if (cntn.transport==='cootie') {
+                        sharedTaskers[cntn.config.reference] = sharedTaskers[cntn.config.reference] || new events.EventEmitter();
+                        cntn.tasker = sharedTaskers[cntn.config.reference];
+                        var tt = cntn.config.agent==='server'?'cntn-request':'cntn-response';
+                        cntn.debug(`cootie listen[${cntn.id}]: ${cntn.config.agent}-->${tt}`);
+                        cntn.tasker.on(tt,(px)=>cntn.parseResponse(px));
+                        cntn.debug(`cntn-request listeners: ${events.getEventListeners(cntn.tasker,'cntn-request')}`);
+                        cntn.debug(`cntn-response listeners: ${events.getEventListeners(cntn.tasker,'cntn-response')}`);
+                        if (cntn.max>cntn.tasker.getMaxListeners()) cntn.tasker.setMaxListeners(cntn.max);
+                    } else {
+                        cntn.tasker.setMaxListeners(cntn.max);
                     };
 
                     return cntn;
@@ -344,3 +405,5 @@ module.exports = function(RED) {
         res.json(palette);
     });
 }
+
+console.log(`Successfully loaded ${name}, version: ${version}`);
